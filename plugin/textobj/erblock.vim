@@ -10,4 +10,4 @@ call textobj#user#plugin('erb', {
 \   },
 \ })
 
-let loaded_textobj_erblock = 1
+let g:loaded_textobj_erblock = 1

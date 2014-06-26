@@ -8,9 +8,22 @@ function! OutputMultilineTag()
 
   " Go back to the first (empty) line and delete it so that there aren't empty
   " lines.
-  normal gg
-  normal dd
+  normal! ggdd
 endfunction
+
+function! OutputNestedTag()
+  put = '<% test do %>'
+  put = '  <%= hello %>'
+  put = '<% end %>'
+
+  normal! ggdd
+endfunction
+
+function! OutputToFirstLine(str)
+  normal! gg
+  put! = a:str
+endfunction
+
 
 describe 'erb'
   it 'should set a global variable'
@@ -18,7 +31,25 @@ describe 'erb'
   end
 end
 
-describe 'Regular tags'
+
+describe 'mappings'
+  it 'makes the aE and iE mappings available'
+    new
+
+    call OutputToFirstLine('<% a tag %>')
+    normal diE
+    Expect getline(1) == '<%  %>'
+
+    call OutputToFirstLine('<% a tag %>')
+    normal daE
+    Expect getline(1) == ''
+
+    close!
+  end
+end
+
+
+describe 'textobj-erb'
   before
     new
   end
@@ -28,59 +59,69 @@ describe 'Regular tags'
   end
 
   it '<Plug>(textobj-erblock-a) selects the entire tag'
-    put! = '<% test %>'
+    call OutputToFirstLine('<% test %>')
     execute "normal d\<Plug>(textobj-erb-a)"
     Expect getline(1) == ''
   end
 
-  it '<Plug>(textobj-erblock-a) selects inside the whitespace-free tag'
-    put! = '<% test -%>'
-    execute "normal d\<Plug>(textobj-erb-i)"
-    Expect getline(1) == '<%  -%>'
-  end
-
-  it '<Plug>(textobj-erblock-a) selects inside the tag'
-    put! = '<% test %>'
+  it '<Plug>(textobj-erblock-i) selects inside the tag'
+    call OutputToFirstLine('<% test %>')
     execute "normal d\<Plug>(textobj-erb-i)"
     Expect getline(1) == '<%  %>'
   end
 
   it '<Plug>(textobj-erblock-a) selects the entire whitespace-free tag'
-    put! = '<% test -%>'
+    call OutputToFirstLine('<% test -%>')
     execute "normal d\<Plug>(textobj-erb-a)"
     Expect getline(1) == ''
   end
 
-  it '<Plug>(textobj-erblock-a) selects inside the outputting tag'
-    put! = '<%= test %>'
+  it '<Plug>(textobj-erblock-i) selects inside the whitespace-free tag'
+    call OutputToFirstLine('<% test -%>')
+    execute "normal d\<Plug>(textobj-erb-i)"
+    Expect getline(1) == '<%  -%>'
+  end
+
+  it '<Plug>(textobj-erblock-a) selects the entire outputting tag'
+    call OutputToFirstLine('<%= test %>')
+    execute "normal d\<Plug>(textobj-erb-a)"
+    Expect getline(1) == ''
+  end
+
+  it '<Plug>(textobj-erblock-i) selects inside the outputting tag'
+    call OutputToFirstLine('<%= test %>')
     execute "normal d\<Plug>(textobj-erb-i)"
     Expect getline(1) == '<%=  %>'
   end
 
-  it '<Plug>(textobj-erblock-a) selects the entire outputting tag'
-    put! = '<%= test %>'
+  it '<Plug>(textobj-erblock-a) selects the entire comment tag'
+    call OutputToFirstLine('<%# test %>')
     execute "normal d\<Plug>(textobj-erb-a)"
     Expect getline(1) == ''
   end
 
-  it '<Plug>(textobj-erblock-a) selects inside the comment tag'
-    put! = '<%# test %>'
+  it '<Plug>(textobj-erblock-i) selects inside the comment tag'
+    call OutputToFirstLine('<%# test %>')
     execute "normal d\<Plug>(textobj-erb-i)"
     Expect getline(1) == '<%#  %>'
   end
 
-  it '<Plug>(textobj-erblock-a) selects the entire comment tag'
-    put! = '<%# test %>'
+  it '<Plug>(textobj-erblock-a) selects around the non-escaped tag'
+    call OutputToFirstLine('<%== Non escaped tag %>')
     execute "normal d\<Plug>(textobj-erb-a)"
     Expect getline(1) == ''
   end
 
-  it 'handles nested tags'
-    put! = '<% end %>'
-    put! = '  <%= hello %>'
-    put! = '<% test do %>'
+  it '<Plug>(textobj-erblock-i) selects inside the non-escaped tag'
+    call OutputToFirstLine('<%== Non escaped tag %>')
+    execute "normal d\<Plug>(textobj-erb-i)"
+    Expect getline(1) == '<%==  %>'
+  end
 
-    normal 2Gfh
+  it 'handles nested tags'
+    call OutputNestedTag()
+
+    normal jfh
     execute "normal d\<Plug>(textobj-erb-i)"
     Expect getline(1) == '<% test do %>'
     Expect getline(2) == '  <%=  %>'
@@ -89,7 +130,6 @@ describe 'Regular tags'
 
   it '<Plug>(textobj-erblock-a) handles multiline tags'
     call OutputMultilineTag()
-
     execute "normal d\<Plug>(textobj-erb-a)"
 
     Expect getline(1) == ''
@@ -100,7 +140,6 @@ describe 'Regular tags'
 
   it '<Plug>(textobj-erblock-i) handles multiline tags'
     call OutputMultilineTag()
-
     execute "normal d\<Plug>(textobj-erb-i)"
 
     Expect getline(1) == '<%#'

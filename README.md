@@ -1,4 +1,4 @@
-# ERB tag text object (for vim)
+# vim-textobj-erb
 
 [![Build Status](https://travis-ci.org/whatyouhide/vim-textobj-erb.svg?branch=master)](https://travis-ci.org/whatyouhide/vim-textobj-erb)
 
